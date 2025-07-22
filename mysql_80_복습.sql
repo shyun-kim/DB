@@ -52,24 +52,27 @@ select * from employee;
 select emp_name, gender, hire_date from employee;
 
 -- 사원 테이블의 사번, 사원명, 성별, 입사일, 급여를 조회
-select emp_id, emp_name, gender, hire_date, salary from employee;
+select emp_id, emp_name, gender, hire_date, salary
+from employee;
 
 -- 부서 테이블의 모든 정보 조회
-select * from department;
+select *
+from department;
 
 -- as: 컬럼명 별칭 부여
 -- 형식> select [컬럼명 as 별칭, ...] from [테이블명];
 
 -- 사원 테이블의 사번, 사원명, 성별, 입사일, 급여 컬럼을 조회한 한글 컬럼명으로 출력
-select emp_id as 사번, emp_name as "사 원 명", gender as 성별, hire_date 입사일, salary 급여 from employee; -- 공백이 들어가는 경우에는 따옴표로 감싸줌, as는 생략가능
+select emp_id as 사원, emp_name as 사원명 ,gender 성별, hire_date as 입사일, salary as 급여
+from employee;
 
 -- 사원 테이블의 id, name, gender, Hdate, salary 컬럼명으로 조회
-select emp_id ID, emp_name NAME, gender GENDER, hire_date HDATE, salary SALARY from employee;
+select emp_id id, emp_name name, gender, hire_date Hdate, salary
+from employee;
 
 -- 사원 테이블의 사번, 사원명, 부서명, 폰번호, 이메일, 급여, 보너스(급여*10%)를 조회
 -- 기존의 컬럼에 연산을 수행하여 새로운 컬럼을 생성 할 수 있다.
-desc employee;
-select emp_id, emp_name, dept_id, phone, email, salary, salary*0.1 as bonus from employee;
+
 
 -- 현재 날짜를 조회: curdate()
 select curdate() as DATE from dual;
@@ -82,94 +85,46 @@ select curdate() as DATE from dual;
 ********************************/
 
 -- 정주고 사원의 정보를 조회
-select * from employee;
-select * from employee where emp_name = "정주고"; -- ""사용가능
 
 -- SYS 부서의 속한 모든 사원을 조회
-select * from employee where dept_id = 'SYS';
 
 
 -- 사번이 S0005인 사원의 사원명, 성별, 입사일, 부서아이디, 이메일, 급여를 조회
-select emp_name, gender, hire_date, dept_id, email, salary from employee where emp_id= 'S0005';
 
 -- SYS 부서에 속한 모든 사원들을 조회, 단 출력되는 EMP_ID 컬럼은 사원번호 별칭으로 조회
-select emp_id as '사원번호', emp_name, eng_name, gender, hire_date, salary 
-from employee 
-where dept_id = "sys";
 
 -- where 조건절 컬럼으로 별칭을 사용할 수 있을까요?
 -- 사원명이 홍길동인 사원을 별칭으로 조회 :: where 조건절에서 별칭을 컬럼명으로 사용 불가
-select emp_id as '사원번호', emp_name as 사원명, eng_name, gender, hire_date, salary 
-from employee 
-where emp_name = "홍길동";
 
 -- 전략기획 부서의 모든 사원들의 사번, 사원명, 입사일, 급여를 조회
-select * from department;
-select emp_id, emp_name, hire_date, salary
-from employee
-where dept_id = 'stg';
 
 -- 입사일이 2014년 8월 1일인 사원들 조회
-select * 
-from employee 
-where hire_date = 20140801; -- date 타입은 표현은 문자열 처럼, 처리는 숫자처럼
 
 --  급여가 5000인 사원들 조회
-select * 
-from employee 
-where salary = 5000;
 
 -- 성별이 남자인 사원들을 조회
-select * 
-from employee 
-where gender = 'm';
 
 -- 성별이 여자인 사원들을 조회
-select * 
-from employee 
-where gender = 'f';
 
 -- null: 아직 정의되지 않은 미지수 
 -- 숫자에서는 가장 큰수로 인식, 논리적인 의미를 포함하고 있으므로 등호(=)로는 검색X, is 키워드와 함께 사용 가능
 -- 급여가 null인 값을 가진 사원들을 조회
-select *
-from employee
-where salary is null;
 
 -- 사원들의 영어이름이 정해지지 않은 사원들 조회
-select * from employee where eng_name is null;
 
 -- 퇴사하지 않은 사원들을 조회
-select * from employee where retire_date is null;
 
 -- 퇴사하지 않은 사원들의 보너스 컬럼을 추가하여 조회
-select emp_id, emp_name, dept_id, salary, salary*0.2 as Bonus
-from employee
-where retire_date is null;
 
 -- 퇴사한 사원들의 사번, 사원명, 이메일, 폰번호, 급여를 조회
-select emp_id, emp_name, email, phone, salary, retire_date
-from employee
-where retire_date is not null;
 
 -- ifnull: null 값을 다른 값으로 대체하는 방법
 -- 형식> ifnull(null을 포함하고 있는 컬럼명, 대체값)
 -- STG 부서에 속한 사원들의 정보 조회, 단, 급여가 null인 사원은 0으로 치환
-select * from department;
-select * from employee;
-
-select emp_id, emp_name, email, phone, ifnull(salary,0) as salary
-from employee
-where dept_id = 'stg';
 
 -- 사원 전체 테이블의 내용을 조회, 단 영어이름이 정해지지 않은 사원들은 'Smith' 이름으로 치환
-select emp_id, emp_name, email, phone, ifnull(eng_name, 'SMITH') as eng_name
-from employee;
 
 -- MKT 부서의 사원들을 조회, 재직중인 사원들의 Retire_date 컬럼은 현재 날짜로 치환
-select emp_id, emp_name, eng_name, gender, hire_date, ifnull(retire_date, curdate()) as retire_date, dept_id, phone, email, salary
-from employee
-where dept_id = 'mkt';
 
 
 /********************************
@@ -194,41 +149,19 @@ select distinct emp_id, dept_id from employee;
 ********************************/
 
 -- 급여를 기준으로 오름차순 정렬
-select *
-from employee
-order by salary desc;
 
 -- 급여, 성별을 기준으로 오름차순 정렬
-select *
-from employee
-order by gender, salary asc;
 
 -- eng_name이 null인 사원들을 입사일 기준으로 내림차순 정렬
-select *
-from employee
-where eng_name is null
-order by hire_date desc;
 
 -- 퇴직한 사원들을 급여기준으로 내림차순 정렬
-select *
-from employee
-where retire_date is not null
-order by salary desc;
 
 -- 퇴직한 사원들을 급여 기준으로 내림차순 정렬, slalary 컬럼을 '급여' 별칭으로 치환
 -- '급여' 별칭으로 order by 가능할까요? :: 별칭으로 order by 가능
 -- 실질 순서: where 조건절 데이터 탐색 > 컬럼리스트 > 정렬
-select emp_id, emp_name, dept_id, hire_date, retire_date, salary as 급여
-from employee
-where retire_date is not null
-order by 급여 desc;
 
 -- 정보 시스템(sys) 부서 사원들 중 입사일이 빠른 순서, 급여를 많이 받는 순서로 정렬
 -- hire_date, salary 컬럼은 '입사일', '급여' 별칭으로 컬럼리스트 생성 후 정렬
-select emp_id, emp_name, dept_id, hire_date as 입사일, retire_date, salary as 급여
-from employee
-where dept_id = "sys"
-order by 입사일 asc, 급여 desc;
 
 
 /********************************
@@ -239,48 +172,23 @@ order by 입사일 asc, 급여 desc;
 ********************************/
 
 -- 급여가 5000 이상인 사원들을 조회
-select *
-from employee
-where salary >= 5000
-order by salary;
 
 -- 입사일이 2017-01-01 이후 입사한 사원들을 조회
-select *
-from employee
-where hire_date > 20170101
-order by hire_date asc;
 
 -- 입사일이 2015-01-01 이후거나, 급여가 6000 이상인 사원들을 조회
 -- ~거나, ~또는 or: 두 개의 조건중 하나만 만족해도 조회 가능
-select *
-from employee
-where hire_date >= '2015-01-01' and salary >= 6000;
 
 -- 특정 기간: 2015-01-01~ 2017-12-31 사이에 입사한 모든 사원 조회
 -- 부서기준 오름차순 정렬
-select *
-from employee
-where hire_date >= 20150101 and hire_date <=20171231
-order by dept_id;
 
 -- 급여가 6000 이상, 8000 이하인 사원 조회
-select *
-from employee
-where salary >=6000 and salary <=8000;
 
 -- mkt 부서 사원들의 사번, 사원명, 입사일, 이메일, 급여, 보너스(급여의 20%) 조회
 -- 급여가 null인 사원의 보너스는 기본 50
 -- 보너스가 1000 이상인 사원 조회
 -- 보너스가 높은 사원 기준으로 정렬
-select emp_id, emp_name, hire_date, email, salary, ifnull(salary*0.2, 50) as bonus
-from employee
-where dept_id = 'MKT' and salary*0.2 >= 1000
-order by bonus desc;
 
 -- 사원 명이 '일지매', '오삼식', '김삼순' 인 사원들 조회
-select *
-from employee
-where emp_name = '일지매' or emp_name = '오삼식' or emp_name = '김삼순';
 
 
 /********************************
@@ -298,27 +206,13 @@ where emp_name = '일지매' or emp_name = '오삼식' or emp_name = '김삼순'
 -- between ~ and
 -- 특정 기간: 2015-01-01~ 2017-12-31 사이에 입사한 모든 사원 조회
 -- 부서기준 오름차순 정렬
-select *
-from employee
-where hire_date between 20150101 and 20171231
-order by dept_id;
 
 -- 급여가 6000 이상, 8000 이하인 사원 조회
-select *
-from employee
-where salary between 6000 and 8000;
 
 -- in
 -- 사원 명이 '일지매', '오삼식', '김삼순' 인 사원들 조회
-select *
-from employee
-where emp_name in ('일지매','오삼식','김삼순');
 
 -- 부서 아이디가 mkt, sys, stg에 속한 모든 사원 조회
-select *
-from employee
-where dept_id in ('mkt', 'sys', 'stg')
-order by dept_id;
 
 /********************************
 	특정 문자열 검색: like 연산자 + 와일드 문자(%, _)
@@ -329,21 +223,12 @@ order by dept_id;
 ********************************/
 
 -- '한'씨 성을 가진모든 사원 조회
-select *
-from employee
-where emp_name like '한%';
 
 -- 영어 이름이 'f'로 시작하는 모든 사원
-select *
-from employee
-where eng_name like 'f%';
 
 -- 이메일 이름 중 두번째 자리에 'a'가 들어가는 모든 사원 조회
-select *
-from employee
-where email like '_a%';
 
 -- 이메일 아이디가 4자인 모든 사원을 조회
-select *
-from employee
-where email like '____@%';
+
+
+
