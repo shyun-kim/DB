@@ -278,22 +278,22 @@ group by left(order_date, 4), month(order_date);
 /** select 	year(order_date)), '총계', ifnull(year(order_date), '총계2')),
 		if(grouping(month(order_date)), '소계', ifnull(month(order_date), '소계2')), */
         
-select 	year(order_date),
-		month(order_date),
+select 	substring(order_date, 1,4) as 연도,
+		substring(order_date,6,2) as 월,
         format(sum(total_due),0) 금액합계, 
         format(avg(total_due),0) 금액평균
 from order_header
-group by year(order_date), month(order_date) with rollup;
+group by substring(order_date, 1,4), substring(order_date,6,2) with rollup;
 
-select 	if(grouping(year(order_date)), '총계', cast(YEAR(order_date) as char)) as 연도,
-        if(grouping(month(order_date)), '소계', cast(month(order_date) as char)) as 월,
+
+select 	if(grouping(substring(order_date, 1,4)), '총계', ANY_VALUE(substring(order_date, 1,4))) as 연도,
+		if(grouping(substring(order_date,6,2)), '소계', ANY_VALUE(substring(order_date,6,2))) as 월,
         format(sum(total_due),0) 금액합계, 
         format(avg(total_due),0) 금액평균
 from order_header
-group by 	
--- order_year = (select year(order_date) from order_header),
-cast(year(order_date)as char),
-cast(month(order_date)as char) with rollup;
+group by substring(order_date, 1,4), substring(order_date,6,2) with rollup;
+
+
 
 select 	if(grouping(dept_id), '총합계', ifnull(dept_id, '-')) as dept_id,
 		count(*) count,
