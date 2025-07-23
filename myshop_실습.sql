@@ -143,3 +143,162 @@ select order_id, customer_id, employee_id, order_date, sub_total, delivery_fee, 
 from order_header
 where order_date between 20190101 and 20190107
 order by employee_id asc, order_date desc;
+
+
+/**
+	그룹함수
+**/
+/** customer 테이블 사용 **/
+-- Q01) 고객의 포인트 합을 조회하세요.
+select sum(point)
+from customer;
+
+-- Q02) '서울' 지역 고객의 포인트 합을 조회하세요.
+select sum(point)
+from customer
+where city = '서울';
+
+-- Q03) '서울' 지역 고객의 수를 조회하세요.
+select count(*)
+from customer
+where city = '서울';
+
+-- Q04) '서울' 지역 고객의 포인트 합과 평균을 조회하세요.
+select sum(point), floor(avg(point))
+from customer
+where city = "서울";
+     
+-- Q05) '서울' 지역 고객의 포인트 합, 평균, 최댓값, 최솟값을 조회하세요.
+select sum(point), floor(avg(point)), max(point), min(point)
+from customer
+where city = '서울';
+
+-- Q06) 남녀별 고객의 수를 조회하세요.
+select sum(gender = 'f') as '여성', sum(gender = 'm') as '남성'
+from customer;
+
+-- Q07) 지역별 고객의 수를 조회하세요.
+--      단, 지역 이름을 기준으로 오름차순 정렬해서 조회하세요.
+select city, count(*) as 고객수
+from customer
+group by city
+order by city asc;
+
+-- Q08) 지역별 고객의 수를 조회하세요.
+--      단, 고객의 수가 10명 이상인 행만 지역 이름을 기준으로 오름차순 정렬해서 조회하세요.
+select city, count(*) as 고객수
+from customer
+group by city
+having count(*) >= 10
+order by city asc;
+    
+-- Q09) 남녀별 포인트 합을 조회하세요.
+select gender, sum(point)
+from customer
+group by gender;
+    
+-- Q10) 지역별 포인트 합을 조회하세요.
+--      단, 지역 이름을 기준으로 오름차순 정렬해서 조회하세요.
+select city, sum(ifnull(point,0)) as 포인트합
+from customer
+group by city
+order by city asc;
+    
+-- Q11) 지역별 포인트 합을 조회하세요.
+--      단, 포인트 합이 1,000,000 이상인 행만 포인트 합을 기준으로 내림차순 정렬해서 조회하세요.
+select city, sum(ifnull(point,0)) as 포인트합
+from customer
+group by city
+having sum(ifnull(point,0)) >= 1000000
+order by 포인트합 desc;
+      
+-- Q12) 지역별 포인트 합을 조회하세요.
+--      단, 포인트 합을 기준으로 내림차순 정렬해서 조회하세요.
+select city, sum(ifnull(point,0)) as 포인트합
+from customer
+group by city
+order by 포인트합 desc;
+
+-- Q13) 지역별 고객의 수, 포인트 합을 조회하세요.
+--      단, 지역 이름을 기준으로 오름차순 정렬해서 조회하세요.
+select city, sum(ifnull(point,0)) as 포인트합, count(*) as 고객수
+from customer
+group by city
+order by city asc;
+
+
+-- Q14) 지역별 포인트 합, 포인트 평균을 조회하세요.
+--      단, 포인트가 NULL이 아닌 고객을 대상으로 하며, 지역 이름을 기준으로 오름차순 정렬해서 조회하세요.
+select city, sum(point), floor(avg(point))
+from customer
+where point is not null
+group by city
+order by city asc;
+
+-- Q15) '서울', '부산', '대구' 지역 고객의 지역별, 남녀별 포인트 합과 평균을 조회하세요.
+--      단, 지역 이름을 기준으로 오름차순, 같은 지역은 성별을 기준으로 오름차순 정렬해서 조회하세요.
+select city, gender, format(sum(point),0), format(avg(point),0)
+from customer
+where city in ('서울', '부산', '대구')
+group by city, gender
+order by city asc, gender asc;
+
+
+
+/** order_header 테이블 사용 **/
+    
+-- Q16) 2019년 1월 주문에 대하여 고객아이디별 전체금액 합을 조회하세요.
+select *
+from order_header;
+
+select order_date, customer_id, sum(total_due) as total_due
+from order_header
+where left(order_date, 4) = '2019' and substring(order_date, 6,2) = '01'
+group by customer_id, order_date;
+
+-- Q17) 주문연도별 전체금액 합계를 조회하세요.
+select year(order_date), sum(total_due)
+from order_header
+group by year(order_date);
+
+-- Q18) 2019.01 ~ 2019.06 기간 주문에 대하여 주문연도별, 주문월별 전체금액 합을 조회하세요.
+select left(order_date, 4) as 연도, month(order_date) as 월별, sum(total_due) as 전체금액
+from order_header
+where left(order_date, 4)='2019'and month(order_date) >= '01' and month(order_date) <= '06'
+group by left(order_date, 4), month(order_date);
+
+
+-- Q19) 2019.01 ~ 2019.06 기간 주문에 대하여 주문연도별, 주문월별 전체금액 합과 평균을 조회하세요.
+select left(order_date, 4) as 연도, month(order_date) as 월별, format(sum(total_due),0) as 전체금액, format(avg(total_due),0) as 평균금액
+from order_header
+where left(order_date, 4)='2019'and month(order_date) >= '01' and month(order_date) <= '06'
+group by left(order_date, 4), month(order_date);
+
+-- Q20) 주문연도별, 주문월별 전체금액 합과 평균을 조회하고, rollup 함수를 이용하여 소계와 총계를 출력해주세요.
+/** select 	year(order_date)), '총계', ifnull(year(order_date), '총계2')),
+		if(grouping(month(order_date)), '소계', ifnull(month(order_date), '소계2')), */
+        
+select 	year(order_date),
+		month(order_date),
+        format(sum(total_due),0) 금액합계, 
+        format(avg(total_due),0) 금액평균
+from order_header
+group by year(order_date), month(order_date) with rollup;
+
+select 	if(grouping(year(order_date)), '총계', cast(YEAR(order_date) as char)) as 연도,
+        if(grouping(month(order_date)), '소계', cast(month(order_date) as char)) as 월,
+        format(sum(total_due),0) 금액합계, 
+        format(avg(total_due),0) 금액평균
+from order_header
+group by 	
+-- order_year = (select year(order_date) from order_header),
+cast(year(order_date)as char),
+cast(month(order_date)as char) with rollup;
+
+select 	if(grouping(dept_id), '총합계', ifnull(dept_id, '-')) as dept_id,
+		count(*) count,
+        format(sum(ifnull(salary, 0)), 0) sum,
+        format(avg(ifnull(salary, 0)), 0) avg
+from employee
+-- where salary is not null
+group by dept_id with rollup;
