@@ -347,3 +347,196 @@ where email like '_a%';
 select *
 from employee
 where email like '____@%';
+
+
+/********************************
+	내장함수: 숫자함수, 문자함수, 날짜함수
+    호출되는 위치 - select 다음의 컬럼리스트, 조건절(where)의 컬럼명
+********************************/
+-- 숫자함수
+-- 함수 실습을 위한 테이블: DUAL 테이블
+-- (1) abs(숫자): 절대값
+select abs(100), abs(-100) from dual;
+
+-- (2) floor(숫자), truncate(숫자, 자리수): 소수점 버리기, truncate는 자리수 변수로 소수점 몇번째 자리에서 버릴지 선택가능(반올림X)
+select floor(123.456), truncate(123.456, 0), truncate(123.456, 1)
+from dual;
+
+-- 사원테이블의 sys부서 사원들의 보너스(급여*25%)
+-- 보너스 컬럼은 소수점 1자리로 출력
+select emp_id, emp_name, dept_id, phone, salary, truncate((salary*0.25), 1) as bonus
+from employee
+where dept_id = 'sys';
+
+-- (3) RAND(): 임의의 수를 난수로 발생시키는 함수
+select rand() from dual;
+-- 정수 3자리 난수 발생(0~999)
+select floor(rand()*1000) as rand
+from dual;
+-- 정수 4자리 난수 발생, 소수점 2자리
+select truncate(rand()*10000, 2) as rand
+from dual;
+
+-- (4) mod(숫자, 나누는 수): 나머지 함수
+select mod(123, 2)as odd, mod(124, 2) as even
+from dual;
+
+-- 3자리 수를 랜덤으로 발생시켜, 2로 나눈 후 홀수, 짝수를 구분
+select mod(floor(rand()*10000),2) as result
+from dual;
+
+-- [문자함수]
+-- (1) concat: 문자열을 합쳐주는 함수
+select concat('안녕하세요~ ', '홍길동'," 입니다") as str
+from dual;
+
+-- 사번, 사원명, 사원명2 형식으로 컬럼을 생성하여 조회
+-- 사원명2 컬럼의 데이터 형식은 S0001(홍길동) 출력
+select emp_id, emp_name, concat(emp_id, '(', emp_name, ')') as 사원명2
+from employee;
+
+-- 사번, 사원명, 영어이름, 입사일, 폰번호, 급여를 조회
+-- 영어이름의 출력형식을 홍길동/hong 타입으로 출력
+-- 영어이름이 null 인 경우에는 'smite'를 기본으로 조회
+select emp_id, emp_name, concat(emp_name, '/', ifnull(eng_name, 'smith')) as 영어이름, hire_date, phone, salary
+from employee;
+
+-- (2) substring(문자열, 위치, 갯수) : 문자열 추출
+select substring("대한민국 홍길동", 1, 4) -- 문자열이기 때문에 1번부터, 저장소 관련 메모리 순서는 0번부터
+, substring("대한민국 홍길동", 6,3)
+from dual; -- 공백 포함되어 출력됨
+
+-- 사원 테이블의 사번, 사원명, 입사년도, 입사월, 입사일, 급여를 조회
+select emp_id, emp_name, substring(hire_date,1,4) as 입사년도, substring(hire_date,6,2) 입사월, substring(hire_date,9,2) 입사일, salary
+from employee;
+
+-- 2015년도에 입사한 모든 사원 조회
+select *
+from employee
+where substring(hire_date, 1, 4) = '2025';
+
+-- 2018년도에 입사한 정보시스템(sys) 부서 사원 조회
+select *
+from employee
+where substring(hire_date, 1,4) = 2018 and dept_id = 'sys';
+
+-- (3) left(문자열, 갯수), right(문자열, 갯수): 왼쪽, 오른쪽 기준으로 문자열 추출
+select left(curdate(),4) as year, right('010-1234-5678', 4) as phone
+from dual;
+
+-- 2018년도에 입사한 모든 사원 조회
+select *
+from employee
+where left(hire_date, 4) = '2018';
+
+-- 2025년부터 2017년사이에 입사한 모든 사원 조회
+select *
+from employee
+where left(hire_date, 4) between 2017 and 2025;
+
+-- 사원번호, 사원명, 입사일, 폰번호, 급여 조회
+-- 폰번호는 마지막 4자리만 출력
+select emp_id, emp_name, hire_date, right(phone,4), salary
+from employee;
+
+-- (4) upper(문자열), lower(문자열): 대소문자 치환
+select upper('welcomToMysql'), lower('welcomToMysql')
+from dual;
+
+-- 사번, 사원명, 영어이름, 부서아이디, 이메일, 급여를 조회
+-- 영어 이름은 전체 대문자, 부서 아이디는 소문자, 이메일은 대문자로 조회
+select 	emp_id, 
+		emp_name, 
+		upper(eng_name), 
+        lower(dept_id), 
+        upper(email), 
+        salary
+from employee;
+
+-- (5) trin(): 공백 제거
+select 	trim('                대한민국') as t1,
+		trim('대한민국                ') as t2,
+        trim('대한                민국') as t3,
+        trim('        대한민국        ') as t4
+from dual;
+
+
+-- (6) format(문자열, 소수점 자리) : 문자열 포맷 3자리 콤마 구분
+select format(123456, 0) as format from dual;
+select format('123456', 0) as format from dual;
+
+-- 사번, 사원명, 입사일, 폰번호, 급여, 보너스(급여의 20%)를 조회
+-- 급여, 보너스는 소수점 없이, 3자리 콤마(,)로 구분하여 출력
+-- 급여가 null인 경우에는 기본값 0
+-- 2016년 부터 2017년 사이에 입사한 사원
+-- 사번 기준으로 내림차순 정렬
+
+select 	emp_id,
+		emp_name, 
+        hire_date, 
+        phone, 
+        format(ifnull(salary, 0), 0) as salary, 
+        format(floor(ifnull(salary, 0)*0.2), 0) as bonus
+from employee
+where left(hire_date, 4) between '2015' and '2017'
+order by emp_id desc;
+
+-- [날짜함수]
+-- curdate(): 현재 날짜(년,월,일)
+-- sysdate(): 현재 날짜(년,월,일,시,분,초)
+-- now()
+
+select curdate(), sysdate(), now()
+from dual;
+
+-- [형변환 함수]
+-- cast(변환하고자 하는 값 as 데이터 타입)
+-- convert(변환하고자 하는 값 as 데이터 타입): MySQL에서 지원하는 OLD 버전
+select 1234 as number, cast(1234 as char) as string from dual;
+select '1234' as string, cast(1234 as signed integer) as number from dual;
+select '20250723' as string, cast('20250723' as date) from dual;
+select 	now() as date,
+		cast(now() as char) as String,
+		cast(cast(now() as char) as date) as date,
+        cast(curdate() as datetime) as datetime
+from dual;
+
+
+select 	'12345' as string,
+		cast('12345' as signed integer) as cast_int, -- int변환
+        cast('12345' as unsigned integer) as cast_int2, -- 부호가 포함된 int
+        cast('12345' as decimal(10,2)) as cast_desimal -- 실수 형태
+from dual;
+
+-- [문자 치환 함수]
+-- replace(문자열, old, new)
+select 	'홍-길-동' as old,
+		replace('홍-길-동', '-', ',') as new from dual;
+        
+-- 사원 테이블의 사번, 사원명, 입사일, 퇴사일, 부서아이디, 폰번호, 급여 조회
+-- 입사일, 퇴사일 출력은 '-'을 '/'로 치환하여 출력
+-- 재직중인 사원은 현재날짜를 출력
+
+select	emp_id, 
+		emp_name, 
+        replace(hire_date, '-','/') as hire_date,
+        -- replace(cast(hire_date), '-','/') as hire_date,
+        replace(ifnull(retire_date, curdate()), '-','/') as retire_date,
+        dept_id,
+        phone,
+        format(salary, 0) as salary
+from employee;
+
+
+-- '20150101' str으로 입력된 날짜를 기준으로 해당 날짜 이후에 입사한 사원들은 모두 조회
+-- 모든 mysqpl 데이터베이스에서 적용가능한 형태로 작성
+select *
+from employee
+where hire_date >= cast('20150101' as date);
+
+-- '20150101' ~ '20171231' 사이에 입사한 사원들을 모두 조회
+-- 모든 mysql 데이터 베이스에서 적용 가능한 형태로 작성
+select *
+from employee
+where hire_date between cast('20150101' as date) and cast(20170101 as date);
+
