@@ -907,3 +907,429 @@ where emp_id = (select emp_id from employee where emp_name='홍길동');
 
 -- 
 */
+
+
+/********************************
+	서브쿼리(SubQuesty): 메인 쿼리에 다른 쿼리를 추가하여 실행하는 방식
+    형식: select [컬럼리스트: (스칼라 서브쿼리, 비추천)
+		from [테이블명: (인라인뷰)]
+        where [조건절:(서브쿼리)]
+********************************/
+
+use hrdb2019;
+select database();
+show tables;
+
+-- [서브쿼리]
+-- 정보시스템 부서명의 사원들을 모두 조회
+-- 사번, 사원명, 부서아이디, 폰번호, 급여
+select emp_id, emp_name, dept_id, phone, salary
+from employee
+where dept_id = (select dept_id from department where dept_name = '정보시스템');
+
+-- [스칼라 서브쿼리]
+-- 정보시스템 부서명의 사원들을 모두 조회
+-- 사번, 사원명, 부서아이디, 폰번호, 급여
+select 	emp_id, 
+		emp_name,
+        dept_id,
+        (select dept_name from department where dept_name='정보시스템') as dept_name, -- 권장하지 않음
+        phone,
+        salary
+from employee
+where dept_id = (select dept_id from department where dept_name = '정보시스템');
+
+-- [서브쿼리: 단일행 - '=']
+-- 홍길동 사원이 속한 부서명 조회
+select dept_name
+from department
+where dept_id = (select dept_id from employee where emp_name = '홍길동');
+
+-- 홍길동 사원의 휴가사용내역을 조회
+desc vacation;
+select *
+from vacation
+where emp_id = (select emp_id from employee where emp_name = '홍길동');
+
+-- 제 3본부에 속한 모든 부서를 조회
+select *
+from department
+where unit_id = (select unit_id from unit where unit_name = '제3본부');
+
+-- 급여가 가장 높은 사원의 정보 조회
+select *
+from employee
+where salary = (select max(salary) as salary from employee);
+
+-- 급여가 가장 낮은 사원의 정보 조회
+select *
+from employee
+where salary = (select min(salary) as salary from employee);
+
+-- 가장 빨리 입사한 사원의 정보 조회
+select *
+from employee
+where hire_date = (select min(hire_date) from employee);
+
+-- 가장 최근 입사한 사원의 정보 조회
+select *
+from employee
+where hire_date = (select max(hire_date) from employee);
+
+-- [서브쿼리 : 다중행 - in]
+-- 제 3본부에 속한 모든 사원 정보 조회
+select *
+from employee
+where dept_id in (select dept_id
+					from department
+                    where unit_id = (select unit_id from unit where unit_name = '제3본부'));
+
+
+-- '제3본부'에 속한 모든 사원들의 휴가 사용 내역 조회
+select *
+from vacation
+where emp_id in (select emp_id
+				from employee
+				where dept_id in (select dept_id
+					from department
+					where unit_id = (select unit_id from unit where unit_name = '제3본부'))
+					);
+
+-- [인라인뷰: 메인쿼리의 테이블 자리에 들어가는 서브쿼리 형식]
+-- [휴가를 사용한 사원정보만]
+-- 사원별 휴가사용 일수를 그룹핑하여, 사원아이디, 사원명, 입사일, 연봉, 휴가사용 일수를 조회
+desc vacation;
+
+select e.emp_id, e.emp_name, e.hire_date, e.salary, v.duration
+from employee e, (select emp_id, sum(duration) as duration
+				from vacation
+				group by emp_id) v
+where e.emp_id = v.emp_id;
+
+-- ansi : inner join
+select e.emp_id, e.emp_name, e.hire_date, e.salary, v.duration
+from employee e
+inner join (select emp_id, sum(duration) as duration
+				from vacation
+				group by emp_id) v
+where e.emp_id = v.emp_id;
+
+-- [휴가를 사용한 사원정보 + 사용하지않은 사원 포함]
+-- 사원별 휴가 사용 일수를 그룹핑하여 ,사원아이디, 사원명, 입사일, 연봉, 휴가 사둉일수 조회
+-- 휴가를 사용하지않은 사원은 기본값 0
+-- 사용일수 기준 내림차순 정렬
+-- left outer join
+select e.emp_id, e.emp_name, e.hire_date, e.salary, ifnull(v.duration, 0) duration
+from employee e
+		left outer join
+        (select emp_id, sum(duration) as duration
+				from vacation
+				group by emp_id) v
+on e.emp_id = v.emp_id
+order by duration desc;
+
+-- 1) 2016~2017년도 입사한 사원들의 정보 조회
+-- 2) 1번의 실행 결과와 vacation 테이블을 조인하여 휴가 사용 내역 출력
+select *
+from vacation v,
+		(select *
+			from employee
+            where left(hire_date,4) between '2016' and '2017') e
+where v.emp_id = e.emp_id;
+
+
+
+-- 1) 부서별 총급여, 평균급여를 구하여 30000 이상인 부서 조회
+-- 2) 1번의 실행 결과와 employee 테이블을 조인하여 사원아이디, 사원명, 급여, 부서아이디, 부서명, 부서별 총급여, 평균급여 출력
+select e.emp_id, e.emp_name, e.salary, e.dept_id, d.dept_name, t.sum, t.avg
+from 	employee e,
+		department d,
+		(select dept_id, sum(ifnull(salary, 0)) as sum, floor(avg(ifnull(salary,0))) as avg
+						from employee
+						group by dept_id
+                        having sum(ifnull(salary, 0)) > 30000) t
+where e.dept_id = d.dept_id and d.dept_id=t.dept_id;
+
+
+
+/********************************
+	테이블 결과 합치기: union, union all
+    형식> 쿼리1 실행 결과 union 쿼리2 실행 결과 (똑같은 값만 걸러내기 - inner join)
+		 쿼리1 실행 결과 union all 쿼리2 실행 결과 (전체값 합집합)
+	** 실행결과 컬럼이 동일해야 함(컬럼명, 데이터타입)
+********************************/
+-- 영업부, 정보시스템 부서의 사원아이디, 사원명, 급여, 부서아이디 조회
+-- union: 영업 부서 사원들이 한번만 출력
+select emp_id, emp_name, salary, dept_id
+from employee
+where dept_id = (select dept_id from department where dept_name = '영업')
+union 
+select emp_id, emp_name, salary, dept_id
+from employee
+where dept_id = (select dept_id from department where dept_name = '영업')
+union 
+select emp_id, emp_name, salary, dept_id
+from employee
+where dept_id = (select dept_id from department where dept_name = '정보시스템');
+
+-- union all: 영업 부서 사원들이 중복되어 출력
+select emp_id, emp_name, salary, dept_id
+from employee
+where dept_id = (select dept_id from department where dept_name = '영업')
+union all
+select emp_id, emp_name, salary, dept_id
+from employee
+where dept_id = (select dept_id from department where dept_name = '영업')
+union all
+select emp_id, emp_name, salary, dept_id
+from employee
+where dept_id = (select dept_id from department where dept_name = '정보시스템');
+
+/********************************
+	논리적인 테이블: view(뷰), SQL을 실행하여 생성된 결과를 가상테이블로 정의
+    뷰 생성: create view
+			as [SQL 정의];
+	뷰 삭제: drop view [view 이름]
+	** 뷰 생성시 권한을 할당 받아야 함 - mysql, maria는 권한 할당 받지 않아도 됨
+    뷰는 편리하지만 권한을 할당 받아야 해서 DBA들이 선호하지 않음,
+    view를 가상으로 생성해야 하기 때문에 많이 생성할 시 성능 누수 발생
+********************************/
+select *
+from information_schema.views
+where table_schema = 'hrdb2019';
+
+-- 부서 총 급여가 30000 이상인 테이블
+create view view_salary_sum
+as
+select e.emp_id, e.emp_name, e.salary, e.dept_id, d.dept_name, t.sum, t.avg
+from 	employee e,
+		department d,
+		(select dept_id, sum(ifnull(salary, 0)) as sum, floor(avg(ifnull(salary,0))) as avg
+						from employee
+						group by dept_id
+                        having sum(ifnull(salary, 0)) > 30000) t
+where e.dept_id = d.dept_id and d.dept_id=t.dept_id;
+
+-- view_salary_sum 실행
+select *
+from view_salary_sum;
+
+-- view_salary_sum 삭제
+drop view view_salary_sum;
+select * from information_schema.views
+where table_schema = 'hrdb2019';
+
+/********************************
+	DDL(Data Definition Language) : 생성, 수정, 삭제 - 테이블 기준
+    DML: C(Insert), R(Select), U(Update), D(Delete)
+********************************/
+-- 모든 테이블 목록
+show tables;
+
+-- [테이블 생성]
+-- 형식> create table [테이블명] (
+-- 				컬럼명 데이터타입(크기),
+-- 				....
+-- 			);
+-- 데이터 타입: 정수형(int, long), 실수형(float, double), 문자형(char, varchar, longtext...), 이진데이터(longblob)..
+-- char(고정형 문자형) : 크기가 메모리에 고정되는 형식, 예) char(10) --> 3자리 입력: 7자리 낭비
+-- varchar(가변형 문자형) : 실제 저장되는 데이터 크기에 따라 메모리가 변경되는 형식, varchar(10) --> 3자리 입력: 메모리 3자리 공간만 생성
+-- longtext: 문장형태로 다수으 ㅣ문자열 저장
+-- longblob: 이진데이터 타입의 이미지, 동영상 등 데이터 저장
+-- date: 년, 월, 일 -> curdate()
+-- datetime: 년, 월, 일, 시, 분, 초 -> sysdate(), now()
+desc employee;
+select * from employee;
+
+-- emp 테이블 생성
+-- emp_id: (char, 4), ename: (varchar, 10), gender: (char, 1), hire_date: (datetime), salary: (int)
+show tables;
+create table emp (
+	emp_id		char(4),
+	ename		varchar(10),
+    gender		char(1),
+    hire_date	datetime,
+    salary		int
+);
+
+select * from information_schema.tables
+where table_schema = 'hrdb2019';
+
+desc emp;
+
+-- [테이블 삭제]
+-- 형식> drop table [테이블명];
+show tables;
+
+drop table emp;
+
+-- [테이블 복제]
+-- 형식> create table [테이블명]
+-- 		as [SQL 정의]
+
+-- employee 테이블을 복제하여 emp 테이블 생성
+select * from employee;
+
+create table emp
+	as select * from employee;
+    
+show tables;
+
+select * from emp;
+desc employee;
+desc emp; -- 제약사항은 복제 되지 않음
+
+-- 2016년도에 입사한 사원의 정보를 복제: employee_2016
+create table employee_2016
+as select * from employee where left(hire_date, 4) = '2016';
+
+desc employee_2016;
+
+/********************************
+	데이터 생성(insert:C)
+    형식> 	insert into [테이블명] (컬럼리스트...)
+			values (데이터1, 데이터2...)
+********************************/
+show tables;
+drop table emp;
+desc emp;
+
+select * from employee;
+insert into emp(emp_id, ename, gender, hire_date, salary)
+values('s001', '홍길동', 'm', now(), 1000);
+
+insert into emp(emp_id, ename, gender, salary, hire_date)
+values('s001', '홍길동', 'm', 1000, null);
+
+insert into emp(emp_id)
+values('s002'); -- null을 허용하고 있기 때문에 디폴트 값 null로 삽입됨
+
+select * from emp;
+
+-- [테이블 절삭: 테이블의 데이터만 영구 삭제]
+-- 형식> truncate table [테이블명];
+truncate table emp;
+select * from emp;
+drop table emp;
+
+create table emp (
+	emp_id		char(4)		not null,
+	ename		varchar(10) not null,
+    gender		char(1) 	not null,
+    hire_date	datetime,
+    salary		int
+);
+
+desc emp;
+select * from emp;
+
+insert into emp(emp_id, ename, gender, hire_date, salary)
+values('s001', '홍길동', 'm', now(), 1000);
+
+insert into emp(emp_id, ename, gender, hire_date, salary)
+values('s002', '이순신', 'm', sysdate(), 2000);
+
+insert into emp(emp_id, ename, gender, hire_date, salary)
+values(2000, 's002', '이순신', 'm', sysdate());
+
+insert into emp(emp_id, ename, gender, hire_date, salary)
+values('s002', null , 'm', sysdate(), 2000);
+
+insert into emp
+values('s003', '김유신', 'm', curdate(), 3000);
+
+-- [자동 행번호 생성: auto_increment]
+-- 정수형으로 번호를 생성하며 저장함, pk(Primary key), unique 제약으로 정정된 컬럼에 주로 사용
+create table emp2(
+	emp_id	int		auto_increment primary key, -- unique + not null
+	ename	varchar(10) 	not null,
+    gender char(1) 			not null,
+    hire_date				date,
+    salary					int
+    );
+    
+show tables;
+desc emp2;
+insert into emp2(ename, gender, hire_date, salary)
+values ('홍길동', 'm', now(), 1000);
+
+/********************************
+	데이터 변경: alter table
+    형식> 	alter table [테이블명]
+			 add column (새로추가하는 컬렴명) [데이터타입] null 허용
+             modify column [변경하는 컬러몀], 크기 고려
+             drop column [삭제하는 컬럼명]
+********************************/
+show tables;
+select * from emp;
+
+-- phone(char,13) 컬럼 추가, null 허용
+alter table emp
+	add column phone char(13) null;
+desc emp;
+select * from emp;
+
+insert into emp
+	values('s004', '홍홍', 'f', now(), 4000, '010-1234-1234');
+
+-- phone 컬럼의 크기 변경: char(13) --> char(10)
+alter table emp
+	modify column phone char(10) null; -- 저장된 데이터 보다 크기가 작으면 에러발생; 데이터 유실 위험 발생
+
+-- phone 컬럼 삭제
+alter table emp
+	drop column phone;
+    
+/********************************
+	데이터 수정(update: u)
+    형식> update [테이블명]
+			set [컬럼리스트...]
+			where [조건절~]
+	** 주의사항: set sql_safe_updates = 1 or 0;
+    -- 1: 업데이트 불가, 0: 업데이트 가능
+********************************/
+select * from emp;
+set sql_safe_updates = 0; -- 업데이트 모드 해제
+-- 홍길동의 급여를 6000으로 수정
+update emp
+	set salary = 6000
+    where emp_id = 's001';
+
+-- 김유신의 입사날짜를 '20210725'로 수정
+update emp
+	set hire_date = cast('20210724' as datetime)
+	where emp_id = 's003';
+    
+-- emp2 테이블에 retire_date 컬럼 추가: date, null 허용
+-- 기존 데이터는 현재 날짜로 수정
+-- 업데이트 완료 후 retire_date not null 로 변경
+select * from emp2;
+alter table emp2
+	add column retire_date date null;
+    
+update emp2
+	set retire_date = curdate()
+    where retire_date is null;
+
+alter table emp2
+	modify column retire_date date not null;
+    
+/********************************
+	데이터 삭제(delete :D)
+    형식> delete from [테이블명]
+			where [조건절~]
+	** 주의사항: set sql_safe_updates = 1 or 0;
+    -- 1: 업데이트 불가, 0: 업데이트 가능
+********************************/
+select * from emp;
+
+-- 이순신 사원 삭제
+delete from emp
+	where emp_id = 's002';
+
+-- 홍홍 사원 삭제
+delete from emp
+	where emp_id = 's004';
+
+rollback;
+    
