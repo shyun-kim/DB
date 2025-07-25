@@ -984,7 +984,6 @@ where dept_id in (select dept_id
 					from department
                     where unit_id = (select unit_id from unit where unit_name = '제3본부'));
 
-
 -- '제3본부'에 속한 모든 사원들의 휴가 사용 내역 조회
 select *
 from vacation
