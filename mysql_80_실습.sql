@@ -1331,4 +1331,27 @@ delete from emp
 	where emp_id = 's004';
 
 rollback;
-    
+
+/********************************
+	constraint(제약사항) : 데이터의 무결성 원칙을 적용하기 위한 규칙
+    - unique(유니크 제약) : 중복 방지 제약
+    - not null: null 값을 허용하지 않는 제약 :: 화면 구현시 유효성 체크 로직과 연동
+    - primary key(기본키) : unique + not null
+    - foreigh key(참조키) : 타 테이블의 기본키를 참조하는 컬럼 설정,
+							참조하는 기본키의 데이터 타입과 동일함
+	- default : 데이터 입력 시 기본으로 저장되는 값 설정
+    ** 제약사항은 테이블 생성 시 정의 가능함, 또는 테이블 수정으로도 변경, 추가 가능
+    - create table ... , alt table ...
+********************************/
+use hrdb2019;
+select database();
+select * from information_schema.table_constraints
+where table_schema = 'hrdb2019';
+
+
+
+
+
+
+
+
