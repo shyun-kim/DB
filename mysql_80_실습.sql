@@ -1791,5 +1791,205 @@ from (select distinct m.name, m.created_at, o.order_date, oi.quantity, oi.produc
     on t1.product_id = p.product_id;
 
 
+/********************************************
+	행번호, 트리거를 이용한 사원번호 생성
+*********************************************/
+
+use hrdb2019;
+select database();
+
+-- 사원테이블의 사번, 사원명, 입사일, 폰번호, 이메일, 급여 조회
+select emp_id, emp_name, hire_date, phone, email, salary
+from employee;
+
+-- row_number() over(order by 컬럼명 ASC/DESC)
+-- 입사일 : 입사년도, 급여: 3자리 구분
+select 
+	row_number() over(order by emp_id) as rno,
+    emp_id, 
+    emp_name, 
+    concat(left(hire_date, 4), '년') as hire_date,
+    phone, 
+    email, 
+    salary,
+	concat(format(salary, 0), '원') as salary
+from employee;
 
 
+
+
+
+-- rno 행번호 추가, 주문날짜(년,월,일), 가격(소수점 생략, 3자리 구분)
+select 
+	row_number() over() as rno,
+    t1.name, 
+    t1.created_at, 
+    left(t1.order_date, 10) as order_date, 
+    t1.quantity, 
+    p.name, 
+    format(floor(p.price), 0) as price
+from (select distinct m.name, m.created_at, o.order_date, oi.quantity, oi.product_id
+		from member m, `order` o, orderitem oi
+		where m.member_id = o.member_id 
+		and o.order_id = oi.order_id) t1 right outer join product p
+										on t1.product_id = p.product_id;
+
+-- 석차를 구하는 함수
+select 
+	-- row_number() over(order by emp_id desc) as rno, 
+	rank() over(order by salary desc) as r,
+	emp_id, 
+    emp_name,
+    dept_id,
+    salary
+from employee;   
+
+-- 트리거 : 프로시저(함수, 메소드)를 호출하는 시작점
+select *
+from information_schema.triggers;
+
+
+-- 트리거 실습 테이블
+create table trg_member(
+	mid		char(5),		-- 'M0001'
+    name	varchar(10),
+    mdate	date
+);
+drop table trg_member;
+
+-- tgr_member, mid 컬럼 타입 수정: varchar(10)
+alter table trg_member
+	modify column mid varchar(10);
+desc trg_member;
+
+-- trigger 생성: 여러개의 sql문 포함
+/***********************************************************/
+delimiter $$
+create trigger trg_member_mid
+before insert on trg_member -- 테이블명
+for each row
+begin
+declare max_code int; -- 'M0001'
+
+-- 현재 저장된 값 중 가장 큰 값을 가져옴
+select ifnull(max(cast(right(mid,4) as unsigned)), 0)
+into max_code
+from trg_member;
+
+-- 'M0001' 형식으로 아이디 생성, LPAD(값, 크기, 채워지는 문자 형식)
+-- 왼쪽이 아니라 오른쪽에 0을 붙이고 싶으면 RPAD 사용
+set new.mid = concat('M', lpad(max_code +1, 4, '0'));
+-- set new.mid = lpad(max_code +1, 5, '0'); 
+
+end $$
+delimiter ;
+/***********************************************************/
+
+
+select * from information_schema.triggers;
+select * from trg_member;
+insert into trg_member(name, mdate)
+	values('홍길동', curdate());
+
+set sql_safe_updates =0;
+delete from trg_member;
+    
+    
+-- 트리거 삭제
+drop trigger trg_member_mid;
+
+
+--
+show tables;
+drop table employee_2016;
+
+-- employee 테이블 구조만 복제
+desc employee;
+create table employee_stru
+as 
+select * from employee where 1 = 0;
+
+show tables;
+desc employee_stru;
+select * from employee_stru;
+
+alter table employee_stru
+	add constraint pk_emp_id primary key(emp_id);
+
+
+-- emp_id에 데이터 insert 작업 시 트리거가 실행되도록 생성
+-- 'E0001' 형식으로 데이터 추가
+/***********************************************************/
+delimiter $$
+create trigger trg_employee_stru_empid
+before insert on employee_stru -- 테이블명
+for each row
+begin
+declare max_code int;
+
+-- 현재 저장된 값 중 가장 큰 값을 가져옴
+select ifnull(max(cast(right(emp_id,4) as unsigned)), 0)
+into max_code
+from employee_stru;
+
+-- 'M0001' 형식으로 아이디 생성, LPAD(값, 크기, 채워지는 문자 형식)
+-- 왼쪽이 아니라 오른쪽에 0을 붙이고 싶으면 RPAD 사용
+set new.emp_id = concat('E', lpad(max_code+1, 4, '0'));
+-- set new.mid = lpad(max_code +1, 5, '0'); 
+
+end $$
+delimiter ;
+/***********************************************************/
+drop trigger trg_employee_stru_empid;
+
+select * from employee_stru;
+insert into employee_stru(emp_name, gender, hire_date, dept_id, phone, email, salary)
+values('홍길동', 'm', '2016-01-01', 'SYS', '010-1234-5678','hong@example.com', 1000);
+
+insert into employee_stru(emp_name, gender, hire_date, dept_id, phone, email, salary)
+values('이순신', 'm', '2016-01-01', 'SYS', '010-1234-5678','hong@example.com', 1000);
+
+
+-- 참조 관계에 대한 트리거 생성: 참조관계(부모(dept : dept_id) <---> 자식(emp : dept_id))
+select * from dept;
+select * from emp;
+
+-- ACC 부서 삭제
+delete from dept where dept_id = 'ACC'; -- emp의 고소해 사원이 참조중이라 삭제 불가
+
+-- GEN 부서 삭제
+delete from dept where dept_id = 'GEN'; -- emp에서 참조하는 사원이 없으므로 삭제 가능
+
+-- 정주고 사원 삭제
+delete from emp where emp_id = 'S0019';
+
+-- 1. 참조 관계 설정 시 on delete cascade
+-- 부모의 참조컬럼이 삭제되면, 자식의 행이 함께 삭제 됨
+-- 뉴스테이블의 기사 컬럼이 삭제되며, 댓글 테이블의 댓글이 함께 삭제
+-- 게시판의 게시글 삭제 시 게시글의 댓글이 함께 삭제
+create table board(
+	bid			int				primary key		auto_increment,
+	title		varchar(100)	not null,
+    content		longtext,
+    bdate		datetime
+);
+
+create table reply(
+	rid			int				primary key		auto_increment,
+    content		varchar(100)	not null,
+    bid			int		not null,
+    rdate		datetime,
+    constraint	fk_reply_bid		foreign key(bid)
+    references board(bid)	on delete cascade
+);
+desc board;
+desc reply;
+
+-- 2. 트리거를 사용하여 부모의 참조컬럼 삭제 시 자식의 참조 컬럼 데이터를 null로 변경
+
+-- ACC	회계	B	2015-04-01
+-- ADV	홍보	C	2015-06-01
+-- GEN	총무	B	2014-03-01
+-- HRD	인사	B	2013-05-01
+-- MKT	영업	C	2013-05-01
+-- SYS	정보시스템	A	2013-01-01
