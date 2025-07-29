@@ -2061,7 +2061,4 @@ begin
     end if;
 
 end $$
-delimiter ;
 /***********************************************************/
-drop table salary_log;
-drop trigger trg_salary_update;
