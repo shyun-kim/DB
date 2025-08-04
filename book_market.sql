@@ -1,4 +1,5 @@
 use hrdb2019;
+show tables;
 select database();
 
 /********************************************************************
@@ -8,8 +9,8 @@ select database();
 ********************************************************************/
 
 
-drop table book_market_books;
-drop trigger trg_books;
+-- drop table book_market_books;
+-- drop trigger trg_books;
 create table book_market_books (
 	isbn		char(8)			primary key, -- trigger 생성 필요
     title		varchar(20) 	not null,
@@ -21,7 +22,9 @@ create table book_market_books (
 );
 
 create table book_market_cart (
-
+	isbn		char(8)			primary key,
+    quantity	int,
+    total_price	int
 );
 
 create table book_market_member (
@@ -73,6 +76,6 @@ update book_market_member
             
 set sql_safe_updates = 0;
 
-select name, phone, address
-from book_market_member
-				+" where name =
+insert into book_market_cart(isbn, quantity, total_price)
+values()
+                
