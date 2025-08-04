@@ -72,7 +72,7 @@ end $$
 /***********************************************************/
 delimiter $$
 create trigger trg_book_yes24_bid
-before insert on book_tj -- 테이블명
+before insert on book_yes24 -- 테이블명
 for each row
 begin
 -- bid 생성 시 B001 생성
@@ -93,7 +93,7 @@ end $$
 /***********************************************************/
 delimiter $$
 create trigger trg_book_aladin_bid
-before insert on book_tj -- 테이블명
+before insert on book_aladin -- 테이블명
 for each row
 begin
 -- bid 생성 시 B001 생성
@@ -110,3 +110,13 @@ set new.bid = concat('B', lpad(max_code+1, 3, '0'));
 
 end $$
 /***********************************************************/
+
+-- Connection 확인
+show status like 'Threads_connected'; 	-- 접속 커넥션 수
+show processlist;					 	-- 활성중인 커넥션
+show variables like 'max_connections';	-- 최대 접속 가능 커넥션 수
+
+
+select row_number() over(order by bid) as rno,
+	bid, title, author, isbn, price, bdate
+from book_tj;
